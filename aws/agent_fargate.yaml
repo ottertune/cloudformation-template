@@ -90,6 +90,8 @@ Resources:
                   Value: !Ref DBKey
                 - Name: OTTERTUNE_ORG_ID
                   Value: !Ref OrganizationID
+                - Name: POSTGRES_OTTERTUNE_DB_NAME
+                  Value: !Ref PostgresDBName
               Essential: true
               LogConfiguration:
                 LogDriver: awslogs
@@ -137,7 +139,7 @@ Resources:
                   Effect: "Allow"
                   Action:
                     - ssm:GetParameters
-                    - secretsmanager:GetSecretValue*
+                    - secretsmanager:GetSecretValue
                   Resource:
                     - !Ref DBPasswordArn
                     - !Ref APIKeyArn
