@@ -8,12 +8,26 @@ Parameters:
   DBUsername:
     Description: The database username that the agent will use for connecting to your database.
     Type: String
-  DBPasswordArn:
-    Description: The AWS Secrets Manager or SSM Parameter Store ARN that contains the password for the agent databaser user.
+  DBPassword:
     Type: String
+    NoEcho: true
+    Default: ""
+    Description: "The password for the database user specified by DBUsername. The value will be stored as a secret in AWS Secrets Manager. This field will be ignored if DBPasswordArn is modified."
+  DBPasswordArn:
+    Description: The AWS Secrets Manager ARN that contains the password for the agent databaser user. Leave as the default if you want CloudFormation to create the secret with the value specified by DBPassword.
+    Type: String
+    AllowedPattern: "arn:.*:secretsmanager:.*"
+    Default: "arn:aws:secretsmanager:DEFAULT"
+  APIKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: "The OtterTune API Key. The value will be stored as a secret in AWS Secrets Manager. This field will be ignored if APIKeyArn is modified."
   APIKeyArn:
     Description: The AWS Secrets Manager or SSM Parameter Store ARN that contains the API key for the agent.
     Type: String
+    AllowedPattern: "arn:.*:secretsmanager:.*"
+    Default: "arn:aws:secretsmanager:DEFAULT"
   DBKey:
     Description: OtterTune provided identifier for the database.
     Type: String
@@ -43,6 +57,39 @@ Conditions:
   CreateCluster: !Equals
     - !Ref ClusterName
     - ""
+  CreateDBPasswordSecret: !Equals
+    - !Ref DBPasswordArn
+    - "arn:aws:secretsmanager:DEFAULT"
+  CreateAPIKeySecret: !Equals
+    - !Ref APIKeyArn
+    - "arn:aws:secretsmanager:DEFAULT"
+
+Rules:
+  DBPasswordSet:
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::And:
+                - Fn::Equals:
+                  - !Ref DBPassword
+                  - ""
+                - Fn::Equals:
+                  - !Ref DBPasswordArn
+                  - arn:aws:secretsmanager:DEFAULT
+        AssertDescription: DBPassword or DBPasswordArn must be set
+  APIKeySet:
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::And:
+                - Fn::Equals:
+                  - !Ref APIKey
+                  - ""
+                - Fn::Equals:
+                  - !Ref APIKeyArn
+                  - arn:aws:secretsmanager:DEFAULT
+        AssertDescription: APIKey or APIKeyArn must be set
+
 
 Resources:
     Cluster:
@@ -102,9 +149,17 @@ Resources:
               Image: !Ref Image
               Secrets:
                 - Name: OTTERTUNE_DB_PASSWORD
-                  ValueFrom: !Ref DBPasswordArn
+                  ValueFrom: 
+                    Fn::If:
+                      - CreateDBPasswordSecret
+                      - !Ref DBPasswordSecret
+                      - !Ref DBPasswordArn
                 - Name: OTTERTUNE_API_KEY
-                  ValueFrom: !Ref APIKeyArn
+                  ValueFrom: 
+                    Fn::If:
+                      - CreateAPIKeySecret
+                      - !Ref APIKeySecret
+                      - !Ref APIKeyArn
           Cpu: 256
           Memory: 512
           NetworkMode: awsvpc
@@ -117,6 +172,20 @@ Resources:
           TaskRoleArn: !GetAtt 
             - TaskRole
             - Arn
+    
+    DBPasswordSecret:
+      Type: AWS::SecretsManager::Secret
+      Condition: CreateDBPasswordSecret
+      Properties:
+        Description: "Database password for DBUsername"
+        SecretString: !Ref DBPassword
+    
+    APIKeySecret:
+      Type: AWS::SecretsManager::Secret
+      Condition: CreateAPIKeySecret
+      Properties:
+        Description: "OtterTune API Key"
+        SecretString: !Ref APIKey
 
     ExecutionRole:
       Type: AWS::IAM::Role
@@ -138,11 +207,18 @@ Resources:
                 - 
                   Effect: "Allow"
                   Action:
-                    - ssm:GetParameters
                     - secretsmanager:GetSecretValue
                   Resource:
-                    - !Ref DBPasswordArn
-                    - !Ref APIKeyArn
+                    - 
+                      Fn::If:
+                        - CreateAPIKeySecret
+                        - !Ref APIKeySecret
+                        - !Sub ${APIKeyArn}*
+                    -
+                      Fn::If:
+                        - CreateDBPasswordSecret
+                        - !Ref DBPasswordSecret
+                        - !Sub ${DBPasswordArn}*
                 -
                   Effect: "Allow"
                   Action:
@@ -184,3 +260,4 @@ Resources:
                     - rds:Describe*
                     - cloudwatch:Get*
                   Resource: "*"
+                  
