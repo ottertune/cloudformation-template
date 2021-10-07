@@ -1,0 +1,282 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template for launching the OtterTune Agent.
+
+Parameters:
+  DBIdentifier:
+    Description: The RDS DB identifier of your database.
+    Type: String
+  DBUsername:
+    Description: The database username that the agent will use for connecting to your database.
+    Type: String
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: "The password for the database user specified by DBUsername. The value will be stored as a secret in AWS Secrets Manager. This field will be ignored if DBPasswordArn is modified."
+  DBPasswordArn:
+    Description: The AWS Secrets Manager ARN that contains the password for the agent databaser user. Leave as the default if you want CloudFormation to create the secret with the value specified by DBPassword.
+    Type: String
+    AllowedPattern: "arn:.*:secretsmanager:.*"
+    Default: "arn:aws:secretsmanager:DEFAULT"
+  APIKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: "The OtterTune API Key. The value will be stored as a secret in AWS Secrets Manager. This field will be ignored if APIKeyArn is modified."
+  APIKeyArn:
+    Description: The AWS Secrets Manager or SSM Parameter Store ARN that contains the API key for the agent.
+    Type: String
+    AllowedPattern: "arn:.*:secretsmanager:.*"
+    Default: "arn:aws:secretsmanager:DEFAULT"
+  DBKey:
+    Description: OtterTune provided identifier for the database.
+    Type: String
+  OrganizationID:
+    Description: OtterTune provided identifier for your organization.
+    Type: String
+  PostgresDBName:
+    Description: Name of Postgres database. Leave blank for non postgres databases.
+    Type: String
+    Default: ""
+  Image:
+    Description: The OtterTune agent image
+    Default: public.ecr.aws/o5c4u2c7/agent:0.1.4
+    Type: String
+  SecurityGroupIDs:
+    Description: List of security groups associated with the agent. Must be able to speak to your target database and be able to speak to the public internet.
+    Type: List<AWS::EC2::SecurityGroup::Id>
+  SubnetIDs:
+    Description: List of subnets associated with the agent. Must be able to speak to the your target database and the public internet.
+    Type: List<AWS::EC2::Subnet::Id>
+  ClusterName:
+    Description: Optional ECS cluster name to run task in (if you have already set one up). Leave blank if you would like one automatically created.
+    Type: String
+    Default: ""
+
+Conditions:
+  CreateCluster: !Equals
+    - !Ref ClusterName
+    - ""
+  CreateDBPasswordSecret: !Equals
+    - !Ref DBPasswordArn
+    - "arn:aws:secretsmanager:DEFAULT"
+  CreateAPIKeySecret: !Equals
+    - !Ref APIKeyArn
+    - "arn:aws:secretsmanager:DEFAULT"
+
+Rules:
+  DBPasswordSet:
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::And:
+                - Fn::Equals:
+                  - !Ref DBPassword
+                  - ""
+                - Fn::Equals:
+                  - !Ref DBPasswordArn
+                  - arn:aws:secretsmanager:DEFAULT
+        AssertDescription: DBPassword or DBPasswordArn must be set
+  APIKeySet:
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::And:
+                - Fn::Equals:
+                  - !Ref APIKey
+                  - ""
+                - Fn::Equals:
+                  - !Ref APIKeyArn
+                  - arn:aws:secretsmanager:DEFAULT
+        AssertDescription: APIKey or APIKeyArn must be set
+
+
+Resources:
+    Cluster:
+      Type: AWS::ECS::Cluster
+      Condition: CreateCluster
+    AgentService:
+        Type: AWS::ECS::Service
+        Properties: 
+          Cluster: 
+            !If [CreateCluster, !Ref Cluster, !Ref ClusterName]
+          DesiredCount: 1
+          LaunchType: FARGATE
+          NetworkConfiguration: 
+            AwsvpcConfiguration:
+              AssignPublicIp: ENABLED
+              SecurityGroups: !Ref SecurityGroupIDs
+              Subnets: !Ref SubnetIDs
+          PlatformVersion: "1.4.0"
+          PropagateTags: TASK_DEFINITION
+          ServiceName: OtterTuneAgentService
+          TaskDefinition: !Ref AgentTaskDefintion
+    
+    LogGroup:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: !Sub
+          - ecs/ottertune-agent/${DBIdentifier}
+          - { DBIdentifier: !Ref DBIdentifier}
+
+    AgentTaskDefintion:
+        Type: AWS::ECS::TaskDefinition
+        DependsOn: LogGroup
+        Properties: 
+          ContainerDefinitions: 
+            - 
+              Name: OtterTuneAgent
+              Environment:
+                - Name: OTTERTUNE_DB_IDENTIFIER
+                  Value: !Ref DBIdentifier
+                - Name: OTTERTUNE_DB_USERNAME
+                  Value: !Ref DBUsername
+                - Name: AWS_REGION
+                  Value: !Ref AWS::Region
+                - Name: OTTERTUNE_DB_KEY
+                  Value: !Ref DBKey
+                - Name: OTTERTUNE_ORG_ID
+                  Value: !Ref OrganizationID
+                - Name: POSTGRES_OTTERTUNE_DB_NAME
+                  Value: !Ref PostgresDBName
+              Essential: true
+              LogConfiguration:
+                LogDriver: awslogs
+                Options:
+                  awslogs-group: !Select [6, !Split [':', !GetAtt LogGroup.Arn]]
+                  awslogs-region: !Ref AWS::Region
+                  awslogs-stream-prefix: ecs
+              Image: !Ref Image
+              Secrets:
+                - Name: OTTERTUNE_DB_PASSWORD
+                  ValueFrom: 
+                    Fn::If:
+                      - CreateDBPasswordSecret
+                      - !Ref DBPasswordSecret
+                      - !Ref DBPasswordArn
+                - Name: OTTERTUNE_API_KEY
+                  ValueFrom: 
+                    Fn::If:
+                      - CreateAPIKeySecret
+                      - !Ref APIKeySecret
+                      - !Ref APIKeyArn
+          Cpu: 256
+          Memory: 512
+          NetworkMode: awsvpc
+          Tags: 
+            - Key: Description
+              Value: Container definition for the OtterTune agent
+          ExecutionRoleArn: !GetAtt
+            - ExecutionRole
+            - Arn
+          TaskRoleArn: !GetAtt 
+            - TaskRole
+            - Arn
+    
+    DBPasswordSecret:
+      Type: AWS::SecretsManager::Secret
+      Condition: CreateDBPasswordSecret
+      Properties:
+        Description: "Database password for DBUsername"
+        SecretString: !Ref DBPassword
+    
+    APIKeySecret:
+      Type: AWS::SecretsManager::Secret
+      Condition: CreateAPIKeySecret
+      Properties:
+        Description: "OtterTune API Key"
+        SecretString: !Ref APIKey
+
+    ExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument: 
+          Version: "2008-10-17"
+          Statement:
+            - Sid: ''
+              Effect: Allow
+              Principal:
+                Service: ecs-tasks.amazonaws.com
+              Action: 'sts:AssumeRole'         
+        Policies:
+          - 
+            PolicyName: "ottertune-agent-execution"
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - 
+                  Effect: "Allow"
+                  Action:
+                    - secretsmanager:GetSecretValue
+                  Resource:
+                    - 
+                      Fn::If:
+                        - CreateAPIKeySecret
+                        - !Ref APIKeySecret
+                        - !Sub ${APIKeyArn}*
+                    -
+                      Fn::If:
+                        - CreateDBPasswordSecret
+                        - !Ref DBPasswordSecret
+                        - !Sub ${DBPasswordArn}*
+                -
+                  Effect: "Allow"
+                  Action:
+                    - ecr:GetAuthorizationToken
+                    - ecr:BatchCheckLayerAvailability
+                    - ecr:GetDownloadUrlForLayer
+                    - ecr:BatchGetImage
+                  Resource: "*"
+                - 
+                  Effect: "Allow"
+                  Action:
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - !GetAtt
+                      - LogGroup
+                      - Arn
+
+    TaskRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument: 
+          Version: "2008-10-17"
+          Statement:
+            - Sid: ''
+              Effect: Allow
+              Principal:
+                Service: ecs-tasks.amazonaws.com
+              Action: 'sts:AssumeRole'          
+        Policies:
+          - 
+            PolicyName: "ottertune-agent"
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - 
+                  Effect: "Allow"
+                  Action:
+                    - rds:Describe*
+                    - cloudwatch:Get*
+                  Resource: "*"
+                  
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Required
+      Parameters:
+        - APIKey
+        - APIKeyArn
+        - DBUsername
+        - DBPassword
+        - DBPasswordArn
+        - DBIdentifier
+        - PostgresDBName
+        - ClusterName
+        - SecurityGroupIDs
+        - SubnetIDs
+        - Image
+        - DBKey
+        - OrganizationID
