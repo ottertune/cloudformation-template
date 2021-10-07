@@ -3,7 +3,7 @@ Description: IAM role for OtterTune AWS Integration
 Parameters:
   ExternalId:
     Description: >-
-      External ID for the OtterTune role (TODO where to find)
+      External ID for the OtterTune role. Copy from OtterTune role setup wizard.
     Type: String
   IAMRoleName:
     Description: Customize the name of IAM role for OtterTune
@@ -16,22 +16,15 @@ Parameters:
     Default: "691523222388"
   TunableParameterGroups:
     Description: >-
-      Pass in the parameter group names that you'd like to allow OtterTune to optimize. Leave blank 
-      if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
-    Type: CommaDelimitedList
+      Pass in the parameter group names that you'd like to allow OtterTune to optimize. Separate groups by comma, (e.g., "group1,group2") 
+      Leave blank  if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
+    Type: String
     Default: ""
 
-Conditions:
-  HasTunableParameterGroups:
-    !Not
-      - !Equals
-        - !Join ["", !Ref TunableParameterGroups]
-        - ''
 
 Resources:
   OtterTuneRole:
     Type: AWS::IAM::Role
-    DependsOn: OtterTuneTuningPolicyMacroStack
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -74,9 +67,10 @@ Resources:
               Action:
                 - rds-db:connect
         - Fn::Transform:
-          - Name: TuningPolicy
+          - Name: OtterTuneTuningPolicy
             Parameters:
-              PolicyType: 'TuningPolicy'
+              PolicyType: 'OtterTuneTuningPolicy'
+              ParameterGroupNames: !Ref TunableParameterGroups
               Region: !Ref AWS::Region
               AccountNumber: !Ref AWS::AccountId
 

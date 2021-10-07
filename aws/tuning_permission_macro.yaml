@@ -13,9 +13,9 @@ Resources:
       Runtime: python3.7
       Handler: index.handler
       InlineCode: |
-        import traceback, itertools
+        import traceback
         def generate_tuning_policy(parameter_group_names, region, account_number):
-            if not parameter_group_names or not region or not accout_number:
+            if not parameter_group_names or not region or not account_number:
                 return {"Ref" : "AWS::NoValue"}
             parameter_group_names = [pg for pg in parameter_group_names.split(',')]
             return {
@@ -36,11 +36,11 @@ Resources:
         def handler(event, context):
             try:
                 policy_type = event["params"]["PolicyType"]
-                if policy_type == "TuningPolicy":
+                if policy_type == "OtterTuneTuningPolicy":
                     pg_names = event["params"]["ParameterGroupNames"].strip()
                     region = event["params"]["Region"]
                     account_number = event["params"]["AccountNumber"]
-                    fragment = generate_tuning_policy(pg_names, region, accout_number)
+                    fragment = generate_tuning_policy(pg_names, region, account_number)
                 else:
                     fragment = event["fragment"]
                 return {
