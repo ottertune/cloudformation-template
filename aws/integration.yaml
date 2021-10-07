@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: IAM role for OtterTune AWS Integration
+Parameters:
+  ExternalId:
+    Description: >-
+      External ID for the OtterTune role (TODO where to find)
+    Type: String
+  IAMRoleName:
+    Description: Customize the name of IAM role for OtterTune
+    Type: String  
+    Default: OtterTuneRole
+  OtterTuneAWSAccountId:
+    Description: >-
+      OtterTune AWS account ID allowed to assume the IAM role. DO NOT CHANGE!
+    Type: String
+    Default: "691523222388"
+  TunableParameterGroups:
+    Description: >-
+      Pass in the parameter group names that you'd like to allow OtterTune to optimize. Leave blank 
+      if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
+    Type: CommaDelimitedList
+    Default: ""
+
+Conditions:
+  HasTunableParameterGroups:
+    !Not
+      - !Equals
+        - !Join ["", !Ref TunableParameterGroups]
+        - ''
+
+Resources:
+  OtterTuneTuningPolicyMacroStack:
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: https://cf-templates-1b4kr8w68xhcm-us-east-2.s3.us-east-2.amazonaws.com/tuning_permission_macro.yaml
+  
+  OtterTuneRole:
+    Type: AWS::IAM::Role
+    DependsOn: OtterTuneTuningPolicyMacroStack
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub
+                - 'arn:aws:iam::${OtterTuneAWSAccountId}:root'
+                - { OtterTuneAWSAccountId: !Ref OtterTuneAWSAccountId}
+            Action:
+              - 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref ExternalId
+      Path: /
+      RoleName: !Ref IAMRoleName
+      Policies:
+        - PolicyName: OtterTuneDBPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Resource: '*'
+              Action:
+                - rds:Describe*
+                - rds:List*
+                - cloudwatch:Get*
+                - cloudwatch:List*
+                - ce:Get*
+                - ce:List*
+                - ce:Describe*
+                - aws-portal:ViewBilling
+                - iam:SimulatePrincipalPolicy
+        - PolicyName: OtterTuneConnectPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Resource: arn:aws:rds-db:*:*:dbuser:*/ottertune*
+              Action:
+                - rds-db:connect
+        - Fn::Transform:
+          - Name: TuningPolicy
+            Parameters:
+              PolicyType: 'TuningPolicy'
+              Region: !Ref AWS::Region
+              AccountNumber: !Ref AWS::AccountId
+
+        
+  
+
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Required
+      Parameters:
+        - ExternalId
+        - IAMRoleName
