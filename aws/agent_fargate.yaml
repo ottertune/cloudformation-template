@@ -261,3 +261,22 @@ Resources:
                     - cloudwatch:Get*
                   Resource: "*"
                   
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Required
+      Parameters:
+        - APIKey
+        - APIKeyArn
+        - DBUsername
+        - DBPassword
+        - DBPasswordArn
+        - DBIdentifier
+        - PostgresDBName
+        - ClusterName
+        - SecurityGroupIDs
+        - SubnetIDs
+        - Image
+        - DBKey
+        - OrganizationID
