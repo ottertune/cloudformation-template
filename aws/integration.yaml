@@ -14,50 +14,108 @@ Parameters:
       OtterTune AWS account ID allowed to assume the IAM role. DO NOT CHANGE!
     Type: String
     Default: "691523222388"
-  TunableParameterGroups:
+  TunableParameterGroupArns:
     Description: >-
-      Pass in the parameter group names that you'd like to allow OtterTune to optimize. Separate groups by comma, (e.g., "group1,group2") 
-      Leave blank  if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
-    Type: String
+      Pass in the parameter group ARNs that you'd like to allow OtterTune to optimize. Separate groups by comma, (e.g., "<arn1>,<arn2>") 
+      Leave blank if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
+      ARN Format: arn:aws:rds:<region>:<account>:pg:<name>
+    Type: CommaDelimitedList
     Default: ""
-  InstallOtterTuneTuningPolicyMacro:
-    Description: Set to false, only if you have already deployed the OtterTune integration stack with this template.
-    Type: String
-    Default: true
-    AllowedValues:
-      - true
-      - false 
+  TunableAuroraClusterParameterGroupArns:
+    Description: >-
+      Pass in the aurora cluster parameter group ARNs that you'd like to allow OtterTune to optimize. Separate groups by comma, (e.g., "<arn1>,<arn2>") 
+      Leave blank if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
+      ARN Format: arn:aws:rds:<region>:<account>:cluster-pg:<name>
+    Type: CommaDelimitedList
+    Default: ""
 
 Conditions:
-  MustInstallOtterTuneTuningPolicyMacro:
-    Fn::Equals:
-      - Ref: InstallOtterTuneTuningPolicyMacro
-      - true
+  HasParameterGroups: !Not
+    - !Equals 
+      - !Join 
+        - ''
+        - !Ref TunableParameterGroupArns
+      -  ''
+  HasClusterParameterGroups: !Not
+    - !Equals 
+      - !Join 
+        - ''
+        - !Ref TunableAuroraClusterParameterGroupArns
+      -  ''
+  CreateTuningPolicy: !Or
+    - !Condition HasParameterGroups
+    - !Condition HasClusterParameterGroups
 
-Resources:  
-  OtterTuneTuningPolicyMacroStack:
-    Condition: MustInstallOtterTuneTuningPolicyMacro
-    Type: AWS::CloudFormation::Stack
-    Properties: 
-      TemplateURL: https://cf-templates-1b4kr8w68xhcm-us-east-2.s3.us-east-2.amazonaws.com/tuning_permission_macro.yaml
-  OtterTuneIamRoleStack:
-    Type: AWS::CloudFormation::Stack
+Resources:
+  OtterTuneRole:
+    Type: AWS::IAM::Role
     Properties:
-      TemplateURL: https://cf-templates-1b4kr8w68xhcm-us-east-2.s3.us-east-2.amazonaws.com/iam_role.yaml
-      Parameters:
-        ExternalId: !Ref ExternalId
-        IAMRoleName: !Ref IAMRoleName
-        OtterTuneAWSAccountId: !Ref OtterTuneAWSAccountId
-        TunableParameterGroups: !Ref TunableParameterGroups
-      # Create conditional dependency on OtterTuneTuningPolicyMacroStack
-      Tags:
-        - 
-          Key: "OtterTuneTuningPolicyMacroStackId"
-          Value: !If
-            - MustInstallOtterTuneTuningPolicyMacro
-            - !Ref OtterTuneTuningPolicyMacroStack
-            - "null"
-
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub
+                - 'arn:aws:iam::${OtterTuneAWSAccountId}:root'
+                - { OtterTuneAWSAccountId: !Ref OtterTuneAWSAccountId}
+            Action:
+              - 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref ExternalId
+      Path: /
+      RoleName: !Ref IAMRoleName
+      Policies:
+        - PolicyName: OtterTuneDBPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Resource: '*'
+              Action:
+                - rds:Describe*
+                - rds:List*
+                - cloudwatch:Get*
+                - cloudwatch:List*
+                - ce:Get*
+                - ce:List*
+                - ce:Describe*
+                - aws-portal:ViewBilling
+                - iam:SimulatePrincipalPolicy
+        - PolicyName: OtterTuneConnectPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Resource: arn:aws:rds-db:*:*:dbuser:*/ottertune*
+              Action:
+                - rds-db:connect
+        - !If
+          - CreateTuningPolicy
+          - 
+            PolicyName: !Sub
+              - ${StackName}-ottertune-tuning-policy
+              - { StackName: !Ref AWS::StackName }
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+              - !If
+                - HasParameterGroups
+                -
+                  Effect: Allow
+                  Resource: !Ref TunableParameterGroupArns
+                  Action:
+                    - rds:ModifyDBParameterGroup
+                - !Ref AWS::NoValue
+              - !If
+                - HasClusterParameterGroups
+                -
+                  Effect: Allow
+                  Resource: !Ref TunableAuroraClusterParameterGroupArns
+                  Action:
+                    - rds:ModifyDBClusterParameterGroup
+                - !Ref AWS::NoValue
+          - !Ref AWS::NoValue
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -71,7 +129,8 @@ Metadata:
     - Label:
         default: Optional
       Parameters:
-        - TunableParameterGroups
+        - TunableParameterGroupArns
+        - TunableAuroraClusterParameterGroupArns
     - Label:
         default: Do not change
       Parameters:
