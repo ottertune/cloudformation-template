@@ -200,7 +200,9 @@ Resources:
               Action: 'sts:AssumeRole'         
         Policies:
           - 
-            PolicyName: "ottertune-agent-execution"
+            PolicyName: !Sub
+              - ${StackName}-ottertune-agent-execution
+              - { StackName: !Ref AWS::StackName }
             PolicyDocument:
               Version: "2012-10-17"
               Statement:
@@ -250,7 +252,9 @@ Resources:
               Action: 'sts:AssumeRole'          
         Policies:
           - 
-            PolicyName: "ottertune-agent"
+            PolicyName: !Sub
+              - ${StackName}-ottertune-agent-task
+              - { StackName: !Ref AWS::StackName }
             PolicyDocument:
               Version: "2012-10-17"
               Statement:
