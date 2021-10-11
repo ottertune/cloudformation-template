@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: IAM role for OtterTune AWS Integration
+Parameters:
+  ExternalId:
+    Description: >-
+      External ID for the OtterTune role. Copy from OtterTune role setup wizard.
+    Type: String
+  IAMRoleName:
+    Description: Customize the name of IAM role for OtterTune
+    Type: String  
+    Default: OtterTuneRole
+  OtterTuneAWSAccountId:
+    Description: >-
+      OtterTune AWS account ID allowed to assume the IAM role. DO NOT CHANGE!
+    Type: String
+    Default: "691523222388"
+  TunableParameterGroups:
+    Description: >-
+      Pass in the parameter group names that you'd like to allow OtterTune to optimize. Separate groups by comma, (e.g., "group1,group2") 
+      Leave blank  if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
+    Type: String
+    Default: ""
+  InstallOtterTuneTuningPolicyMacro:
+    Description: Set to false, only if you have already deployed the OtterTune integration stack with this template.
+    Type: String
+    Default: true
+    AllowedValues:
+      - true
+      - false 
+
+Conditions:
+  MustInstallOtterTuneTuningPolicyMacro:
+    Fn::Equals:
+      - Ref: InstallOtterTuneTuningPolicyMacro
+      - true
+
+Resources:  
+  OtterTuneTuningPolicyMacroStack:
+    Condition: MustInstallOtterTuneTuningPolicyMacro
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: https://cf-templates-1b4kr8w68xhcm-us-east-2.s3.us-east-2.amazonaws.com/tuning_permission_macro.yaml
+  OtterTuneIamRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://cf-templates-1b4kr8w68xhcm-us-east-2.s3.us-east-2.amazonaws.com/iam_role.yaml
+      Parameters:
+        ExternalId: !Ref ExternalId
+        IAMRoleName: !Ref IAMRoleName
+        OtterTuneAWSAccountId: !Ref OtterTuneAWSAccountId
+        TunableParameterGroups: !Ref TunableParameterGroups
+      # Create conditional dependency on OtterTuneTuningPolicyMacroStack
+      Tags:
+        - 
+          Key: "OtterTuneTuningPolicyMacroStackId"
+          Value: !If
+            - MustInstallOtterTuneTuningPolicyMacro
+            - !Ref OtterTuneTuningPolicyMacroStack
+            - "null"
+
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Required
+      Parameters:
+        - ExternalId
+        - IAMRoleName
+        - OtterTuneAWSAccountId
+    - Label:
+        default: Optional
+      Parameters:
+        - TunableParameterGroups
+    - Label:
+        default: Do not change
+      Parameters:
+        - OtterTuneAWSAccountId
