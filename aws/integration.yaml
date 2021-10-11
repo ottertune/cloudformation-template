@@ -20,6 +20,12 @@ Parameters:
       Leave blank  if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
     Type: String
     Default: ""
+  TunableAuroraClusterParameterGroups:
+    Description: >-
+      Pass in the aurora cluster parameter group names that you'd like to allow OtterTune to optimize. Separate groups by comma, (e.g., "group1,group2") 
+      Leave blank if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
+    Type: String
+    Default: ""
   InstallOtterTuneTuningPolicyMacro:
     Description: Set to false, only if you have already deployed the OtterTune integration stack with this template.
     Type: String
@@ -49,6 +55,7 @@ Resources:
         IAMRoleName: !Ref IAMRoleName
         OtterTuneAWSAccountId: !Ref OtterTuneAWSAccountId
         TunableParameterGroups: !Ref TunableParameterGroups
+        TunableAuroraClusterParameterGroups: !Ref TunableAuroraClusterParameterGroups
       # Create conditional dependency on OtterTuneTuningPolicyMacroStack
       Tags:
         - 
@@ -72,6 +79,7 @@ Metadata:
         default: Optional
       Parameters:
         - TunableParameterGroups
+        - TunableAuroraClusterParameterGroups
     - Label:
         default: Do not change
       Parameters:

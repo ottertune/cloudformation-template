@@ -17,10 +17,15 @@ Parameters:
   TunableParameterGroups:
     Description: >-
       Pass in the parameter group names that you'd like to allow OtterTune to optimize. Separate groups by comma, (e.g., "group1,group2") 
-      Leave blank  if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
+      Leave blank if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
     Type: String
     Default: ""
-
+  TunableAuroraClusterParameterGroups:
+    Description: >-
+      Pass in the aurora cluster parameter group names that you'd like to allow OtterTune to optimize. Separate groups by comma, (e.g., "group1,group2") 
+      Leave blank if you would like to run OtterTune in monitoring-only mode for now. This can be updated later.
+    Type: String
+    Default: ""
 
 Resources:
   OtterTuneRole:
@@ -71,6 +76,7 @@ Resources:
             Parameters:
               PolicyType: 'OtterTuneTuningPolicy'
               ParameterGroupNames: !Ref TunableParameterGroups
+              ClusterParameterGroupNames: !Ref TunableAuroraClusterParameterGroups
               Region: !Ref AWS::Region
               AccountNumber: !Ref AWS::AccountId
 

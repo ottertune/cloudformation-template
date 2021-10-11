@@ -14,23 +14,42 @@ Resources:
       Handler: index.handler
       InlineCode: |
         import traceback
-        def generate_tuning_policy(parameter_group_names, region, account_number):
-            if not parameter_group_names or not region or not account_number:
+        def generate_tuning_policy(pg_names, cluster_pg_names, region, account_number):
+            if not (pg_names or cluster_pg_names) or not region or not account_number:
                 return {"Ref" : "AWS::NoValue"}
-            parameter_group_names = [pg for pg in parameter_group_names.split(',')]
+            statements = []
+            if pg_names:
+                names = [pg for pg in pg_names.split(',')]
+                statements.append(
+                {
+                    "Effect": "Allow",
+                        "Action": [
+                            "rds:ModifyDBParameterGroup",
+                        ],
+                    "Resource": [f"arn:aws:rds:{region}:{account_number}:pg:{pg_name}" for pg_name in names]
+                })
+            if cluster_pg_names:
+                names = [cpg for cpg in cluster_pg_names.split(',')]
+                statements.append(
+                {
+                    "Effect": "Allow",
+                        "Action": [
+                            "rds:ModifyDBClusterParameterGroup",
+                        ],
+                    "Resource": [f"arn:aws:rds:{region}:{account_number}:cluster-pg:{cpg_name}" for cpg_name in names]
+                })
             return {
-                "PolicyName": "OtterTuneTuningPolicy",
+                "PolicyName": { "Fn::Sub" : [
+                    "${StackName}-OtterTuneTuningPolicy", {
+                        "StackName": {
+                            "Ref": "AWS::StackName"
+                        }
+                    }
+                    ]
+                },
                 "PolicyDocument": {
                     "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "rds:ModifyDBParameterGroup",
-                            ],
-                            "Resource": [f"arn:aws:rds:{region}:{account_number}:pg:{pg_name}" for pg_name in parameter_group_names]
-                        },
-                    ]
+                    "Statement": statements
                 }
             }
         def handler(event, context):
@@ -38,9 +57,10 @@ Resources:
                 policy_type = event["params"]["PolicyType"]
                 if policy_type == "OtterTuneTuningPolicy":
                     pg_names = event["params"]["ParameterGroupNames"].strip()
+                    cluster_pg_names = event["params"]["ClusterParameterGroupNames"].strip()
                     region = event["params"]["Region"]
                     account_number = event["params"]["AccountNumber"]
-                    fragment = generate_tuning_policy(pg_names, region, account_number)
+                    fragment = generate_tuning_policy(pg_names, cluster_pg_names, region, account_number)
                 else:
                     fragment = event["fragment"]
                 return {
