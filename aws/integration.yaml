@@ -125,7 +125,6 @@ Metadata:
       Parameters:
         - ExternalId
         - IAMRoleName
-        - OtterTuneAWSAccountId
     - Label:
         default: Optional
       Parameters:
