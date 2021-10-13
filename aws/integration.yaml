@@ -5,6 +5,7 @@ Parameters:
     Description: >-
       External ID for the OtterTune role. Copy from OtterTune role setup wizard.
     Type: String
+    AllowedPattern: ".+"
   IAMRoleName:
     Description: Customize the name of IAM role for OtterTune
     Type: String  
