@@ -74,15 +74,21 @@ Resources:
               Effect: Allow
               Resource: '*'
               Action:
-                - rds:Describe*
-                - rds:List*
-                - cloudwatch:Get*
-                - cloudwatch:List*
+                - aws-portal:ViewBilling
+                - budgets:Describe*
+                - ce:Describe*
                 - ce:Get*
                 - ce:List*
-                - ce:Describe*
-                - aws-portal:ViewBilling
+                - cloudwatch:Describe*
+                - cloudwatch:Get*
+                - cloudwatch:List*
                 - iam:SimulatePrincipalPolicy
+                - pi:DescribeDimensionKeys
+                - pi:GetResourceMetrics
+                - pricing:Describe*
+                - pricing:Get*
+                - rds:Describe*
+                - rds:List*
         - PolicyName: OtterTuneConnectPolicy
           PolicyDocument:
             Version: '2012-10-17'
