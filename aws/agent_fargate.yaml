@@ -40,7 +40,7 @@ Parameters:
     Default: ""
   Image:
     Description: The OtterTune agent image
-    Default: public.ecr.aws/ottertune/agent:0.3.3
+    Default: public.ecr.aws/ottertune/agent:0.3.4
     Type: String
   SecurityGroupIDs:
     Description: List of security groups associated with the agent. Must be able to speak to your target database and allow outbound https to 0.0.0.0/0.
