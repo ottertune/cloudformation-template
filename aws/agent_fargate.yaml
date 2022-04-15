@@ -60,6 +60,14 @@ Parameters:
       - "true"
       - "false"
     Default: "false"
+  DisableTableLevelStatistics:
+    Description: >
+      Leave false unless you want to disable table-level statistics. It's light-weight and should have little impact on your database.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
 
 Conditions:
   CreateCluster: !Equals
@@ -73,6 +81,9 @@ Conditions:
     - "arn:aws:secretsmanager:DEFAULT"
   UseOldSSLConfiguration: !Equals
     - !Ref UseOldSSLConfiguration
+    - "true"
+  DisableTableLevelStatistics: !Equals
+    - !Ref DisableTableLevelStatistics
     - "true"
 
 Rules:
@@ -154,6 +165,11 @@ Resources:
                   - UseOldSSLConfiguration
                   - Name: OPENSSL_CONF
                     Value: /usr/lib/ssl/openssl_cipher1.cnf
+                  - !Ref AWS::NoValue
+                - Fn::If:
+                  - DisableTableLevelStatistics
+                  - Name: DISABLE_TABLE_LEVEL_STATS
+                    Value: true
                   - !Ref AWS::NoValue
               Essential: true
               LogConfiguration:
