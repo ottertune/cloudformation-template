@@ -74,7 +74,6 @@ Resources:
               Effect: Allow
               Resource: '*'
               Action:
-                - aws-portal:ViewBilling
                 - budgets:Describe*
                 - ce:Describe*
                 - ce:Get*
@@ -85,8 +84,6 @@ Resources:
                 - iam:SimulatePrincipalPolicy
                 - pi:DescribeDimensionKeys
                 - pi:GetResourceMetrics
-                - pricing:Describe*
-                - pricing:Get*
                 - rds:Describe*
                 - rds:List*
         - PolicyName: OtterTuneConnectPolicy
