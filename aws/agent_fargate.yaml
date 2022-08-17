@@ -60,6 +60,11 @@ Parameters:
       - "true"
       - "false"
     Default: "false"
+  OtterTuneServerURL:
+    Description: >-
+      The URL for OtterTune used by the agent for sending monitoring data. DO NOT CHANGE!
+    Type: String
+    Default: "https://api.ottertune.com"
 
 Conditions:
   CreateCluster: !Equals
@@ -155,6 +160,8 @@ Resources:
                   - Name: OPENSSL_CONF
                     Value: /usr/lib/ssl/openssl_cipher1.cnf
                   - !Ref AWS::NoValue
+                - Name: OTTERTUNE_OVERRIDE_SERVER_URL
+                  Value: !Ref OtterTuneServerURL
               Essential: true
               LogConfiguration:
                 LogDriver: awslogs
