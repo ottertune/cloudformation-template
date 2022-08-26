@@ -60,6 +60,14 @@ Parameters:
       - "true"
       - "false"
     Default: "false"
+  DisableQueryMonitoring:
+    Description: >
+      Leave false unless you want to disable query collection. It's light-weight and should have little impact on your database.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
   OtterTuneServerURL:
     Description: >-
       The URL for OtterTune used by the agent for sending monitoring data. DO NOT CHANGE!
@@ -76,6 +84,9 @@ Conditions:
   CreateAPIKeySecret: !Equals
     - !Ref APIKeyArn
     - "arn:aws:secretsmanager:DEFAULT"
+  DisableQueryMonitoring: !Equals
+    - !Ref DisableQueryMonitoring
+    - "true"
   UseOldSSLConfiguration: !Equals
     - !Ref UseOldSSLConfiguration
     - "true"
@@ -159,6 +170,11 @@ Resources:
                   - UseOldSSLConfiguration
                   - Name: OPENSSL_CONF
                     Value: /usr/lib/ssl/openssl_cipher1.cnf
+                  - !Ref AWS::NoValue
+                - Fn::If:
+                  - DisableQueryMonitoring
+                  - Name: OTTERTUNE_DISABLE_QUERY_MONITORING
+                    Value: true
                   - !Ref AWS::NoValue
                 - Name: OTTERTUNE_OVERRIDE_SERVER_URL
                   Value: !Ref OtterTuneServerURL
