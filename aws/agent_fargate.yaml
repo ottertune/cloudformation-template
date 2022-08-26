@@ -62,7 +62,7 @@ Parameters:
     Default: "false"
   DisableQueryMonitoring:
     Description: >
-      Leave false unless you want to disable query collection. It's light-weight and should have little impact on your database.
+      Leave false unless you want to disable query collection. OtterTune anonymizes the queries by removing user data from the queries.
     Type: String
     AllowedValues:
       - "true"
