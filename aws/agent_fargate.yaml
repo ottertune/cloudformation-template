@@ -68,6 +68,14 @@ Parameters:
       - "true"
       - "false"
     Default: "false"
+  DisableSchemaMonitoring:
+    Description: >
+      Leave false unless you want to disable schema collection.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
   OtterTuneServerURL:
     Description: >-
       The URL for OtterTune used by the agent for sending monitoring data. DO NOT CHANGE!
@@ -86,6 +94,9 @@ Conditions:
     - "arn:aws:secretsmanager:DEFAULT"
   DisableQueryMonitoring: !Equals
     - !Ref DisableQueryMonitoring
+    - "true"
+  DisableSchemaMonitoring: !Equals
+    - !Ref DisableSchemaMonitoring
     - "true"
   UseOldSSLConfiguration: !Equals
     - !Ref UseOldSSLConfiguration
@@ -174,6 +185,11 @@ Resources:
                 - Fn::If:
                   - DisableQueryMonitoring
                   - Name: OTTERTUNE_DISABLE_QUERY_MONITORING
+                    Value: true
+                  - !Ref AWS::NoValue
+                - Fn::If:
+                  - DisableSchemaMonitoring
+                  - Name: OTTERTUNE_DISABLE_SCHEMA_MONITORING
                     Value: true
                   - !Ref AWS::NoValue
                 - Name: OTTERTUNE_OVERRIDE_SERVER_URL
