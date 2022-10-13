@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: IAM role for OtterTune AWS Integration
+Parameters:
+  ExternalId:
+    Description: >-
+      External ID for the OtterTune role. DO NOT CHANGE OR SHARE!
+    Type: String
+    AllowedPattern: ".+"
+  OrganizationId:
+    Description: >-
+      ID for your OtterTune organization. DO NOT CHANGE OR SHARE!
+    Type: String
+    AllowedPattern: ".+"
+  IAMRoleName:
+    Description: Customize the name of IAM role for OtterTune
+    Type: String  
+    Default: OtterTuneRole
+  OtterTuneAWSAccountId:
+    Description: >-
+      OtterTune AWS account ID allowed to assume the IAM role. DO NOT CHANGE!
+    Type: String
+    Default: "691523222388"
+  OTIntegrationSNSArn:
+    Description: >-
+      OtterTune AWS SNS endpoint arn that registers this IAM role. DO NOT CHANGE!
+    Type: String
+    Default: "arn:aws:sns:us-east-1:691523222388:register-iam-dev"
+
+
+Resources:
+  OtterTuneRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub
+                - 'arn:aws:iam::${OtterTuneAWSAccountId}:root'
+                - { OtterTuneAWSAccountId: !Ref OtterTuneAWSAccountId}
+            Action:
+              - 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref ExternalId
+      Path: /
+      RoleName: !Ref IAMRoleName
+      Policies:
+        - PolicyName: OtterTuneDBPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              Effect: Allow
+              Resource: '*'
+              Action:
+                - budgets:Describe*
+                - ce:Describe*
+                - ce:Get*
+                - ce:List*
+                - cloudwatch:Describe*
+                - cloudwatch:Get*
+                - cloudwatch:List*
+                - iam:SimulatePrincipalPolicy
+                - pi:DescribeDimensionKeys
+                - pi:GetResourceMetrics
+                - rds:Describe*
+                - rds:List*
+        - PolicyName: OtterTuneConnectPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Resource: arn:aws:rds-db:*:*:dbuser:*/ottertune*
+              Action:
+                - rds-db:connect
+
+  OTRegisterIAMResource:
+    Type: Custom::OTRegisterIAMResource
+    Version: '1.0'
+    Properties:
+      ServiceToken:
+        Ref: OTIntegrationSNSArn
+      RoleArn:
+        Value: !GetAtt OtterTuneRole.Arn
+      OrganizationId:
+        Value: !Ref OrganizationId
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Required
+      Parameters:
+        - ExternalId
+        - IAMRoleName
+        - OrganizationId
+    - Label:
+        default: Do not change
+      Parameters:
+        - OtterTuneAWSAccountId
+        - OTRegisterIAMResource
+
+Outputs:
+  RoleArn:
+    Value: !GetAtt OtterTuneRole.Arn
+    Description: >-
+      The ARN of the newly created IAM role to be used by OtterTune service.
+  OrganizationId:
+    Value: !Ref OrganizationId
+    Description: >-
+      The ID for your OtterTune organization.
