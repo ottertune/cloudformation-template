@@ -35,7 +35,7 @@ Parameters:
     Description: OtterTune provided identifier for your organization.
     Type: String
   PostgresDBName:
-    Description: Name of Postgres database. Leave blank for non postgres databases.
+    Description: Name of Postgres database (default value is postgres). You can leave this blank if the default postgres database exists.
     Type: String
     Default: ""
   Image:
