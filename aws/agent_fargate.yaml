@@ -70,7 +70,7 @@ Parameters:
     Default: "false"
   DisableIndexMonitoring:
     Description: >
-      Leave false unless you want to disable index monitoring. Index monitoring is also disabled when "DisableTableMonitoring" is true.
+      Leave false unless you want to disable index monitoring.
     Type: String
     AllowedValues:
       - "true"
@@ -78,7 +78,7 @@ Parameters:
     Default: "false"
   DisableQueryMonitoring:
     Description: >
-      Leave false unless you want to disable query collection. Queries are anonymized by removing user data from the queries.
+      Leave false unless you want to disable query collection.
     Type: String
     AllowedValues:
       - "true"
