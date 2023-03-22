@@ -60,6 +60,22 @@ Parameters:
       - "true"
       - "false"
     Default: "false"
+  DisableTableMonitoring:
+    Description: >
+      Leave false unless you want to disable table and index monitoring.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
+  DisableIndexMonitoring:
+    Description: >
+      Leave false unless you want to disable index monitoring. Index monitoring is also disabled when "DisableTableMonitoring" is true.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
   DisableQueryMonitoring:
     Description: >
       Leave false unless you want to disable query collection. Queries are anonymized by removing user data from the queries.
@@ -92,6 +108,12 @@ Conditions:
   CreateAPIKeySecret: !Equals
     - !Ref APIKeyArn
     - "arn:aws:secretsmanager:DEFAULT"
+  DisableTableMonitoring: !Equals
+    - !Ref DisableTableMonitoring
+    - "true"
+  DisableIndexMonitoring: !Equals
+    - !Ref DisableIndexMonitoring
+    - "true"
   DisableQueryMonitoring: !Equals
     - !Ref DisableQueryMonitoring
     - "true"
@@ -181,6 +203,16 @@ Resources:
                   - UseOldSSLConfiguration
                   - Name: OPENSSL_CONF
                     Value: /usr/lib/ssl/openssl_cipher1.cnf
+                  - !Ref AWS::NoValue
+                - Fn::If:
+                  - DisableTableMonitoring
+                  - Name: OTTERTUNE_DISABLE_TABLE_LEVEL_STATS
+                    Value: true
+                  - !Ref AWS::NoValue
+                - Fn::If:
+                  - DisableIndexMonitoring
+                  - Name: OTTERTUNE_DISABLE_INDEX_STATS
+                    Value: true
                   - !Ref AWS::NoValue
                 - Fn::If:
                   - DisableQueryMonitoring
