@@ -62,7 +62,7 @@ Parameters:
     Default: "false"
   DisableTableMonitoring:
     Description: >
-      Leave false unless you want to disable table and index monitoring.
+      Leave false unless you want to disable table monitoring.
     Type: String
     AllowedValues:
       - "true"
@@ -70,7 +70,7 @@ Parameters:
     Default: "false"
   DisableIndexMonitoring:
     Description: >
-      Leave false unless you want to disable index monitoring. Index monitoring is also disabled when "DisableTableMonitoring" is true.
+      Leave false unless you want to disable index monitoring.
     Type: String
     AllowedValues:
       - "true"
