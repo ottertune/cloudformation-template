@@ -176,8 +176,8 @@ Resources:
       Type: AWS::Logs::LogGroup
       Properties:
         LogGroupName: !Sub
-          - ecs/ottertune-agent/${DBIdentifier}
-          - { DBIdentifier: !Ref DBIdentifier}
+          - ecs/ottertune-agent/${DBKey}
+          - { DBKey: !Ref DBKey}
 
     AgentTaskDefintion:
         Type: AWS::ECS::TaskDefinition
