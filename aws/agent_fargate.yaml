@@ -84,6 +84,14 @@ Parameters:
       - "true"
       - "false"
     Default: "false"
+  DisableLongRunningQueryMonitoring:
+    Description: >
+      Leave false unless you want to disable long running query collection. Query texts are not collected.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
   DisableSchemaMonitoring:
     Description: >
       Leave false unless you want to disable schema collection.
@@ -217,6 +225,11 @@ Resources:
                 - Fn::If:
                   - DisableQueryMonitoring
                   - Name: OTTERTUNE_DISABLE_QUERY_MONITORING
+                    Value: true
+                  - !Ref AWS::NoValue
+                - Fn::If:
+                  - DisableLongRunningQueryMonitoring
+                  - Name: OTTERTUNE_DISABLE_LONG_RUNNING_QUERY_MONITORING
                     Value: true
                   - !Ref AWS::NoValue
                 - Fn::If:
