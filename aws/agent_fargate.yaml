@@ -220,7 +220,7 @@ Resources:
                     Value: true
                   - !Ref AWS::NoValue
                 - Fn::If:
-                  - DisableQueryMonitoring
+                  - DisableLongRunningQueryMonitoring
                   - Name: OTTERTUNE_DISABLE_LONG_RUNNING_QUERY_MONITORING
                     Value: true
                   - !Ref AWS::NoValue
