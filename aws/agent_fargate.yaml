@@ -84,6 +84,14 @@ Parameters:
       - "true"
       - "false"
     Default: "false"
+  DisableLongRunningQueryMonitoring:
+    Description: >
+      Leave false unless you want to disable long running query collection. Query texts are not collected.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
   DisableSchemaMonitoring:
     Description: >
       Leave false unless you want to disable schema collection.
