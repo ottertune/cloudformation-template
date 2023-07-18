@@ -35,7 +35,7 @@ Parameters:
     Description: OtterTune provided identifier for your organization.
     Type: String
   PostgresDBName:
-    Description: Name of Postgres database. Leave blank for non postgres databases.
+    Description: Name of Postgres database. Leave blank for non postgres databases. For multiple databases enter a comma separated list. Default value is "postgres"
     Type: String
     Default: ""
   Image:
@@ -55,6 +55,22 @@ Parameters:
   UseOldSSLConfiguration:
     Description: >
       Leave false unless if you are using an older version of MySQL5.6 (< 5.6.46) which is always the case with Aurora MySQL.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
+  DisableTableMonitoring:
+    Description: >
+      Leave false unless you want to disable table monitoring.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
+  DisableIndexMonitoring:
+    Description: >
+      Leave false unless you want to disable index monitoring.
     Type: String
     AllowedValues:
       - "true"
@@ -92,6 +108,12 @@ Conditions:
   CreateAPIKeySecret: !Equals
     - !Ref APIKeyArn
     - "arn:aws:secretsmanager:DEFAULT"
+  DisableTableMonitoring: !Equals
+    - !Ref DisableTableMonitoring
+    - "true"
+  DisableIndexMonitoring: !Equals
+    - !Ref DisableIndexMonitoring
+    - "true"
   DisableQueryMonitoring: !Equals
     - !Ref DisableQueryMonitoring
     - "true"
@@ -154,8 +176,8 @@ Resources:
       Type: AWS::Logs::LogGroup
       Properties:
         LogGroupName: !Sub
-          - ecs/ottertune-agent/${DBIdentifier}
-          - { DBIdentifier: !Ref DBIdentifier}
+          - ecs/ottertune-agent/${DBKey}
+          - { DBKey: !Ref DBKey}
 
     AgentTaskDefintion:
         Type: AWS::ECS::TaskDefinition
@@ -181,6 +203,16 @@ Resources:
                   - UseOldSSLConfiguration
                   - Name: OPENSSL_CONF
                     Value: /usr/lib/ssl/openssl_cipher1.cnf
+                  - !Ref AWS::NoValue
+                - Fn::If:
+                  - DisableTableMonitoring
+                  - Name: OTTERTUNE_DISABLE_TABLE_LEVEL_STATS
+                    Value: true
+                  - !Ref AWS::NoValue
+                - Fn::If:
+                  - DisableIndexMonitoring
+                  - Name: OTTERTUNE_DISABLE_INDEX_STATS
+                    Value: true
                   - !Ref AWS::NoValue
                 - Fn::If:
                   - DisableQueryMonitoring
