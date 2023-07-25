@@ -125,6 +125,9 @@ Conditions:
   DisableQueryMonitoring: !Equals
     - !Ref DisableQueryMonitoring
     - "true"
+  DisableLongRunningQueryMonitoring: !Equals
+    - !Ref DisableLongRunningQueryMonitoring
+    - "true"
   DisableSchemaMonitoring: !Equals
     - !Ref DisableSchemaMonitoring
     - "true"
