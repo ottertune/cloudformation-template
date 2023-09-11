@@ -100,6 +100,14 @@ Parameters:
       - "true"
       - "false"
     Default: "false"
+  EnableS3:
+    Description: >
+      Enable sending observation data to OtterTune S3 bucket.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
   OtterTuneServerURL:
     Description: >-
       The URL for OtterTune used by the agent for sending monitoring data. DO NOT CHANGE!
@@ -130,6 +138,9 @@ Conditions:
     - "true"
   DisableSchemaMonitoring: !Equals
     - !Ref DisableSchemaMonitoring
+    - "true"
+  EnableS3: !Equals
+    - !Ref EnableS3
     - "true"
   UseOldSSLConfiguration: !Equals
     - !Ref UseOldSSLConfiguration
@@ -238,6 +249,11 @@ Resources:
                 - Fn::If:
                   - DisableSchemaMonitoring
                   - Name: OTTERTUNE_DISABLE_SCHEMA_MONITORING
+                    Value: true
+                  - !Ref AWS::NoValue
+                - Fn::If:
+                  - EnableS3
+                  - Name: OTTERTUNE_ENABLE_S3
                     Value: true
                   - !Ref AWS::NoValue
                 - Name: OTTERTUNE_OVERRIDE_SERVER_URL
