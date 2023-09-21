@@ -28,6 +28,15 @@ Parameters:
 
 
 Resources:
+  OTInitiateIAMResource:
+    Type: Custom::OTInitiateIAMResource
+    Version: '1.0'
+    Properties:
+      ServiceToken:
+        Ref: OTIntegrationSNSArn
+      OrganizationId:
+        Value: !Ref OrganizationId
+
   OtterTuneRole:
     Type: AWS::IAM::Role
     Properties:
