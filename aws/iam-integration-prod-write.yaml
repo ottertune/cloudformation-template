@@ -28,15 +28,6 @@ Parameters:
 
 
 Resources:
-  OTInitiateIAMResource:
-    Type: Custom::OTInitiateIAMResource
-    Version: '1.0'
-    Properties:
-      ServiceToken:
-        Ref: OTIntegrationSNSArn
-      OrganizationId:
-        Value: !Ref OrganizationId
-
   OtterTuneRole:
     Type: AWS::IAM::Role
     Properties:
@@ -75,6 +66,37 @@ Resources:
                 - pi:GetResourceMetrics
                 - rds:Describe*
                 - rds:List*
+                - rds:ModifyDBInstance
+                - rds:ModifyDBCluster
+        - PolicyName: OtterTuneCopyPGPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: Allow
+              Resource: 
+                - 'arn:aws:rds:*:*:pg:*'
+                - 'arn:aws:rds:*:*:cluster-pg:*'
+              Action:
+                - rds:CopyDBParameterGroup
+                - rds:CopyDBClusterParameterGroup
+        - PolicyName: OtterTunePGPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: Allow
+              Resource: 'arn:aws:rds:*:*:pg:ottertune*'
+              Action:
+                - rds:CreateDBParameterGroup
+                - rds:ModifyDBParameterGroup
+        - PolicyName: OtterTuneClusterPGPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              Effect: Allow
+              Resource: 'arn:aws:rds:*:*:cluster-pg:ottertune*'
+              Action:
+                - rds:CreateDBParameterGroup
+                - rds:ModifyDBParameterGroup
 
   OTRegisterIAMResource:
     Type: Custom::OTRegisterIAMResource
@@ -86,6 +108,8 @@ Resources:
         Value: !GetAtt OtterTuneRole.Arn
       OrganizationId:
         Value: !Ref OrganizationId
+      PolicyLevel:
+        Value: 'write_limited'
 
 Metadata:
   AWS::CloudFormation::Interface:
