@@ -95,8 +95,8 @@ Resources:
               Effect: Allow
               Resource: 'arn:aws:rds:*:*:cluster-pg:ottertune*'
               Action:
-                - rds:CreateDBParameterGroup
-                - rds:ModifyDBParameterGroup
+                - rds:CreateDBClusterParameterGroup
+                - rds:ModifyDBClusterParameterGroup
 
   OTRegisterIAMResource:
     Type: Custom::OTRegisterIAMResource
