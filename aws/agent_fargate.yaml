@@ -389,7 +389,6 @@ Resources:
                   Action:
                     - rds:Describe*
                     - cloudwatch:Get*
-                    - sts:AssumeRole
                   Resource: "*"
                   
 Metadata:
