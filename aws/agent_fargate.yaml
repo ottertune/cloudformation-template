@@ -390,6 +390,11 @@ Resources:
                     - rds:Describe*
                     - cloudwatch:Get*
                   Resource: "*"
+                - 
+                  Effect: "Allow"
+                  Action:
+                    - sts:AssumeRole
+                  Resource: "arn:aws:iam::691523222388:role/CrossAccountS3BucketSharingRole"
                   
 Metadata:
   AWS::CloudFormation::Interface:
