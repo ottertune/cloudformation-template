@@ -118,17 +118,17 @@ Parameters:
       The URL for OtterTune used by the agent for sending monitoring data. DO NOT CHANGE!
     Type: String
     Default: "https://api.ottertune.com"
-  TableLevelMonoitorInterval:
+  TableLevelMonitorInterval:
     Description: >-
       The interval for table level monitor. DO NOT CHANGE!
     Type: String
     Default: "3600"
-  QueryMonoitorInterval:
+  QueryMonitorInterval:
     Description: >-
       The interval for query monitor. DO NOT CHANGE!
     Type: String
     Default: "3600"
-  SchemaMonoitorInterval:
+  SchemaMonitorInterval:
     Description: >-
       The interval for schema monitor. DO NOT CHANGE!
     Type: String
@@ -281,11 +281,11 @@ Resources:
                 - Name: OTTERTUNE_OVERRIDE_SERVER_URL
                   Value: !Ref OtterTuneServerURL
                 - Name: OTTERTUNE_OVERRIDE_TABLE_LEVEL_MONITOR_INTERVAL
-                  Value: !Ref TableLevelMonoitorInterval
+                  Value: !Ref TableLevelMonitorInterval
                 - Name: OTTERTUNE_OVERRIDE_QUERY_MONITOR_INTERVAL
-                  Value: !Ref QueryMonoitorInterval
+                  Value: !Ref QueryMonitorInterval
                 - Name: OTTERTUNE_OVERRIDE_SCHEMA_MONITOR_INTERVAL
-                  Value: !Ref SchemaMonoitorInterval
+                  Value: !Ref SchemaMonitorInterval
               Essential: true
               LogConfiguration:
                 LogDriver: awslogs
